@@ -20,16 +20,16 @@ type node struct {
 }
 
 type connection struct {
-	A node
-	B node
+	A *node
+	B *node
 }
 
 func newConnection(a node, b node) connection {
 	if a.id > b.id {
-		return connection{A: a, B: b}
+		return connection{A: &a, B: &b}
 	}
 
-	return connection{A: b, B: a}
+	return connection{A: &b, B: &a}
 }
 
 type society struct {
