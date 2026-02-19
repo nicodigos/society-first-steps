@@ -1,18 +1,37 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"math/rand"
+	"net/http"
 	"time"
 )
 
-func main() {
+func home(w http.ResponseWriter, r *http.Request) {
 	society := society{members: []node{}, connections: map[connection]struct{}{}}
 	society.populateMembers(10)
 	society.connectNodes(100)
 	fmt.Println(society.members)
-	fmt.Println(society.connections)
 
+	v, _ := society.displayNodes()
+	data, err := json.Marshal(v)
+
+	if err != nil {
+		panic(err)
+	}
+
+	w.Write(data)
+}
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", home)
+
+	err := http.ListenAndServe(":4000", mux)
+	log.Fatal(err)
 }
 
 type node struct {
@@ -22,6 +41,15 @@ type node struct {
 type connection struct {
 	A *node
 	B *node
+}
+
+// type connectionDTO struct {
+// 	A uint `json:"A"`
+// 	B uint `json:"B"`
+// }
+
+type connectionDTO struct {
+	Data [][]uint `json:"data"`
 }
 
 func newConnection(a node, b node) connection {
@@ -54,4 +82,23 @@ func (s *society) connectNodes(n uint) {
 		conn := newConnection(s.members[indexOne], s.members[indexTwo])
 		s.connections[conn] = struct{}{}
 	}
+}
+
+func (s *society) displayNodes() (connectionDTO, error) {
+	if len(s.connections) == 0 {
+		return connectionDTO{}, errors.New("No Connections to display")
+	}
+
+	var sliceConnections [][]uint
+
+	for k := range s.connections {
+		newEdge := []uint{}
+		newEdge = append(newEdge, k.A.id)
+		newEdge = append(newEdge, k.B.id)
+		sliceConnections = append(sliceConnections, newEdge)
+	}
+
+	returnConnectionData := connectionDTO{Data: sliceConnections}
+
+	return returnConnectionData, nil
 }
