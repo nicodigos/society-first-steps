@@ -14,7 +14,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 	society := society{members: []node{}, connections: map[connection]struct{}{}}
 	society.populateMembers(10)
 	society.connectNodes(100)
-	fmt.Println(society.members)
 
 	v, _ := society.displayNodes()
 	data, err := json.Marshal(v)
@@ -43,21 +42,18 @@ type connection struct {
 	B *node
 }
 
-// type connectionDTO struct {
-// 	A uint `json:"A"`
-// 	B uint `json:"B"`
-// }
-
 type connectionDTO struct {
-	Data [][]uint `json:"data"`
+	Edges [][]uint `json:"edges"`
+	Order int      `json:"order"`
+	Size  int      `json:"size"`
 }
 
-func newConnection(a node, b node) connection {
+func newConnection(a *node, b *node) connection {
 	if a.id > b.id {
-		return connection{A: &a, B: &b}
+		return connection{A: a, B: b}
 	}
 
-	return connection{A: &b, B: &a}
+	return connection{A: b, B: a}
 }
 
 type society struct {
@@ -79,9 +75,13 @@ func (s *society) connectNodes(n uint) {
 		for indexOne == indexTwo {
 			indexTwo = r.Intn(len(s.members))
 		}
-		conn := newConnection(s.members[indexOne], s.members[indexTwo])
+		conn := newConnection(&s.members[indexOne], &s.members[indexTwo])
+		fmt.Println(s.members[indexOne])
+		fmt.Println(s.members[indexTwo])
 		s.connections[conn] = struct{}{}
 	}
+
+	fmt.Println(s.connections)
 }
 
 func (s *society) displayNodes() (connectionDTO, error) {
@@ -98,7 +98,9 @@ func (s *society) displayNodes() (connectionDTO, error) {
 		sliceConnections = append(sliceConnections, newEdge)
 	}
 
-	returnConnectionData := connectionDTO{Data: sliceConnections}
+	returnConnectionData := connectionDTO{Edges: sliceConnections,
+		Order: len(s.members),
+		Size:  len(sliceConnections)}
 
 	return returnConnectionData, nil
 }
